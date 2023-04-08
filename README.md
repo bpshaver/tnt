@@ -6,6 +6,6 @@
 
 ```trycmd
 $ tnt
-Hello, World!
+No subcommand provided, showing current task...
 
 ```
