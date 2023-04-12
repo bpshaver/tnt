@@ -1,6 +1,6 @@
 mod cli;
 mod io;
-mod tree;
+mod task;
 
 use crate::cli::{Args, TntCommand};
 
