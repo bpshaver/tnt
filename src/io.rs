@@ -1,28 +1,31 @@
+use crate::tree::Task;
+use anyhow::Result;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 use std::path::PathBuf;
 
-fn read_lines(file: PathBuf) -> impl Iterator<Item = String> {
-    let f = File::open(file).unwrap();
-    BufReader::new(f)
-        .lines()
-        .filter(|l| l.is_ok())
-        .map(|l| l.unwrap())
+fn read_task_list_from_file(file: PathBuf) -> Result<Vec<Task>> {
+    let f = File::open(file)?;
+    let reader = BufReader::new(f);
+    let task_list: Vec<Task> = serde_json::from_reader(reader)?;
+    Ok(task_list)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn lines_fixture() -> PathBuf {
+    fn task_list_fixture() -> PathBuf {
         let mut file = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        file.push("tests/test_data/test_lines.txt");
+        file.push("tests/test_data/test_tasks.json");
         file
     }
 
     #[test]
     fn test_read_lines() {
-        let lines: Vec<String> = read_lines(lines_fixture()).collect();
-        assert_eq!(lines, vec!["foo", "bar", "baz"])
+        let tasks: Vec<Task> = read_task_list_from_file(task_list_fixture()).unwrap();
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(tasks[0].value, "do my taxes");
+        assert_eq!(tasks[1].value, "get w2");
     }
 }
