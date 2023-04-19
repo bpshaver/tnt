@@ -26,7 +26,32 @@ fn main() {
                 None => println!("No active task"),
                 Some(task) => println!("{}", task),
             },
-            _ => todo!("Command not supported yet!"),
+            TntCommand::Done => todo!(),
+            #[allow(unused)]
+            TntCommand::First { name } => todo!(),
+            #[allow(unused)]
+            TntCommand::Also { name, switch } => todo!(),
+            TntCommand::Clear => todo!(),
+            #[allow(unused)]
+            TntCommand::List { all } => todo!(),
+            #[allow(unused)]
+            TntCommand::Switch { id } => todo!(),
+            #[allow(unused)]
+            TntCommand::Stdin { parent, current } => todo!(),
+            TntCommand::Local => {
+                if let Some(task) = tasks.get_active_task() {
+                    let root_task = tasks
+                        .get_root(task.id)
+                        .expect("Valid task is guaranteed to have root");
+                    let leaf_nodes = tasks.get_leaf_descendants(root_task);
+                    for task_id in leaf_nodes {
+                        let task = tasks.get(task_id).expect("Task id valid");
+                        if !task.done {
+                            println!("{} {}", task_id, task)
+                        }
+                    }
+                }
+            }
         },
     }
 }

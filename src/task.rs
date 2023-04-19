@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs::File;
@@ -7,17 +7,19 @@ use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Task {
-    id: usize,
+    pub id: usize,
     pub value: String,
     parent: Option<usize>,
     children: Vec<usize>,
-    active: bool,
-    done: bool,
+    pub active: bool,
+    pub done: bool,
 }
 
 pub trait TaskTree {
     fn get_root_tasks(&self) -> Vec<&Task>;
+    fn get_root(&self, id: usize) -> Result<usize>;
     fn get_leaf_tasks(&self) -> Vec<&Task>;
+    fn get_leaf_descendants(&self, idx: usize) -> Vec<usize>;
     fn get_active_task(&self) -> Option<&Task>;
     fn set_active_task(&mut self, id: usize);
 }
@@ -34,16 +36,55 @@ impl TaskTree for Vec<Task> {
             .filter(|t| t.parent.is_none() && !t.done)
             .collect()
     }
+
+    fn get_root(&self, id: usize) -> Result<usize> {
+        let task = self
+            .get(id)
+            .context("Cannot find root task for task id not in task list")?;
+        match task.parent {
+            None => Ok(task.id),
+            Some(id) => self.get_root(id),
+        }
+    }
+
     fn get_leaf_tasks(&self) -> Vec<&Task> {
         self.iter()
             .filter(|t| t.children.is_empty() && !t.done)
             .collect()
     }
+    fn get_leaf_descendants(&self, id: usize) -> Vec<usize> {
+        if let Some(task) = self.get(id) {
+            if task.children.is_empty() {
+                return vec![id];
+            }
+            task.children
+                .iter()
+                .flat_map(|task_id| self.get_leaf_descendants(*task_id))
+                .collect()
+        } else {
+            return vec![];
+        }
+    }
+
     fn get_active_task(&self) -> Option<&Task> {
         self.iter().find(|t| t.active)
     }
+
     fn set_active_task(&mut self, id: usize) {
-        self.iter_mut().for_each(|task| task.active = task.id == id);
+        if let Some(task) = self.iter_mut().find(|t| t.id == id) {
+            if task.children.is_empty() {
+                task.active = true;
+            }
+        } else {
+            let leaf_nodes: Vec<usize> = self.get_leaf_descendants(id);
+            // TODO: Filter leaf nodes to choose which to make active; could do last touched or first created, etc.
+            let active_id = leaf_nodes
+                .first()
+                .expect("Should be at least one leaf node");
+            self.get_mut(*active_id)
+                .expect("Index to self is valid")
+                .active = true;
+        }
     }
 }
 
@@ -64,7 +105,7 @@ mod tests {
                 id: 0,
                 value: "foo".to_string(),
                 parent: None,
-                children: vec![2],
+                children: vec![2, 3],
                 active: false,
                 done: false,
             },
@@ -84,6 +125,30 @@ mod tests {
                 active: true,
                 done: false,
             },
+            Task {
+                id: 3,
+                value: "d".to_string(),
+                parent: Some(0),
+                children: vec![4, 5],
+                active: false,
+                done: false,
+            },
+            Task {
+                id: 4,
+                value: "e".to_string(),
+                parent: Some(3),
+                children: vec![],
+                active: false,
+                done: false,
+            },
+            Task {
+                id: 5,
+                value: "f".to_string(),
+                parent: Some(3),
+                children: vec![],
+                active: false,
+                done: false,
+            },
         ]
     }
     fn task_list_fixture() -> PathBuf {
@@ -93,23 +158,41 @@ mod tests {
     }
 
     #[test]
-    fn test_get_root_tasks() {
+    fn get_root_tasks() {
         assert_eq!(tasks_fixture().get_root_tasks()[0].id, 0);
         assert_eq!(tasks_fixture().get_root_tasks().len(), 1);
     }
+    #[test]
+    fn get_root() {
+        assert_eq!(tasks_fixture().get_root(5).unwrap(), 0)
+    }
 
     #[test]
-    fn test_get_leaf_tasks() {
-        assert_eq!(tasks_fixture().get_leaf_tasks()[0].id, 2);
-        assert_eq!(tasks_fixture().get_leaf_tasks().len(), 1);
+    fn get_leaf_tasks() {
+        assert_eq!(
+            tasks_fixture()
+                .get_leaf_tasks()
+                .iter()
+                .map(|t| t.id)
+                .collect::<Vec<usize>>(),
+            vec![2, 4, 5]
+        )
     }
+
     #[test]
-    fn test_get_active_task() {
+    fn get_leaf_descendants() {
+        let tasks = tasks_fixture();
+        assert_eq!(tasks.get_leaf_descendants(3), vec![4, 5]);
+        assert_eq!(tasks.get_leaf_descendants(0), vec![2, 4, 5]);
+    }
+
+    #[test]
+    fn get_active_task() {
         assert_eq!(tasks_fixture().get_active_task().unwrap().id, 2);
     }
 
     #[test]
-    fn test_set_active_task() {
+    fn set_active_task() {
         let mut tasks = vec![Task {
             id: 0,
             value: "foo".to_string(),
@@ -123,7 +206,7 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialize_simple_task_string() {
+    fn deserialize_simple_task_string() {
         let task_json = r#"
             {
                 "id": 5,
@@ -143,7 +226,7 @@ mod tests {
     }
 
     #[test]
-    fn test_read_lines() {
+    fn read_lines() {
         let tasks: Vec<Task> = read_task_list_from_file(task_list_fixture()).unwrap();
         assert_eq!(tasks.len(), 2);
         assert_eq!(tasks[0].value, "do my taxes");

@@ -57,6 +57,11 @@ pub enum TntCommand {
     },
     /// List all actionable (non-blocked) subtasks for current root task
     Local,
+    /// Switch to task
+    Switch {
+        // ID of task to switch to
+        id: usize,
+    },
 }
 
 impl Args {
