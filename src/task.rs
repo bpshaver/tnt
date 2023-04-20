@@ -95,7 +95,6 @@ impl TaskTree for Vec<Task> {
             task.active = false;
         }
         let new_task_id = recursive_get_new_active_task(self, id);
-        dbg!(new_task_id);
         if let Some(task_id) = new_task_id {
             self.get_mut(task_id).expect("ID is valid").active = true;
         }
@@ -118,7 +117,7 @@ impl TaskTree for Vec<Task> {
         let path_var = "TNT_PATH";
         let path_str = match env::var(path_var) {
             Ok(value) => value,
-            Err(_) => "Users/bshaver/.tnt.json".to_string(),
+            Err(_) => "/Users/bshaver/.tnt.json".to_string(),
         };
 
         let file = OpenOptions::new()
