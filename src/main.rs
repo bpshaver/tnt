@@ -25,7 +25,10 @@ fn main() -> Result<()> {
                 None => println!("No active task"),
                 Some(task) => println!("{}", task),
             },
-            TntCommand::Done => todo!(),
+            TntCommand::Done => {
+                tasks.done();
+                tasks.write()?
+            }
             TntCommand::First { name } => {
                 if let Some(task) = tasks.get_active_task() {
                     tasks.add(name.join(" "), Some(task.id), true);
@@ -33,7 +36,7 @@ fn main() -> Result<()> {
                 }
             }
             TntCommand::Also { name, switch } => {
-                let parent = tasks.get_active_task().map(|task| task.id);
+                let parent = tasks.get_active_task().and_then(|t| t.parent);
                 tasks.add(name.join(" "), parent, switch);
                 tasks.write()?
             }
@@ -46,7 +49,7 @@ fn main() -> Result<()> {
                 }
             }
             TntCommand::Switch { id } => {
-                tasks.set_active_task(id);
+                tasks.set_active_task(Some(id));
                 tasks.write()?;
             }
             #[allow(unused)]

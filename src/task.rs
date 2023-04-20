@@ -9,7 +9,7 @@ use std::path::PathBuf;
 pub struct Task {
     pub id: usize,
     pub value: String,
-    parent: Option<usize>,
+    pub parent: Option<usize>,
     children: Vec<usize>,
     pub active: bool,
     pub done: bool,
@@ -28,11 +28,13 @@ pub trait TaskTree {
     fn get_leaf_tasks(&self) -> Vec<&Task>;
     fn get_leaf_descendants(&self, idx: usize) -> Vec<usize>;
     fn get_active_task(&self) -> Option<&Task>;
-    fn set_active_task(&mut self, id: usize);
+    fn get_mut_active_task(&mut self) -> Option<&mut Task>;
+    fn set_active_task(&mut self, id: Option<usize>);
     fn print(&self);
     fn print_all(&self);
     fn write(&self) -> Result<()>;
     fn add(&mut self, value: String, parent: Option<usize>, switch: bool);
+    fn done(&mut self);
 }
 
 impl fmt::Display for Task {
@@ -65,6 +67,9 @@ impl TaskTree for Vec<Task> {
     }
     fn get_leaf_descendants(&self, id: usize) -> Vec<usize> {
         if let Some(task) = self.get(id) {
+            if task.done {
+                return vec![];
+            }
             if task.children.is_empty() {
                 return vec![id];
             }
@@ -80,26 +85,21 @@ impl TaskTree for Vec<Task> {
     fn get_active_task(&self) -> Option<&Task> {
         self.iter().find(|t| t.active)
     }
+    fn get_mut_active_task(&mut self) -> Option<&mut Task> {
+        self.iter_mut().find(|t| t.active)
+    }
 
-    fn set_active_task(&mut self, id: usize) {
+    fn set_active_task(&mut self, id: Option<usize>) {
         for task in self.iter_mut() {
             task.active = false;
         }
-        if let Some(task) = self.iter_mut().find(|t| t.id == id) {
-            if task.children.is_empty() {
-                task.active = true;
-            }
-        } else {
-            let leaf_nodes: Vec<usize> = self.get_leaf_descendants(id);
-            // TODO: Filter leaf nodes to choose which to make active; could do last touched or first created, etc.
-            let active_id = leaf_nodes
-                .first()
-                .expect("Should be at least one leaf node");
-            self.get_mut(*active_id)
-                .expect("Index to self is valid")
-                .active = true;
+        let new_task_id = recursive_get_new_active_task(self, id);
+        dbg!(new_task_id);
+        if let Some(task_id) = new_task_id {
+            self.get_mut(task_id).expect("ID is valid").active = true;
         }
     }
+
     fn print(&self) {
         for task in self.get_root_tasks() {
             task.print(0);
@@ -108,7 +108,7 @@ impl TaskTree for Vec<Task> {
 
     fn print_all(&self) {
         for task in self.get_root_tasks() {
-            tree_print(self, task.id, 0);
+            recursive_print(self, task.id, 0);
         }
     }
 
@@ -144,19 +144,49 @@ impl TaskTree for Vec<Task> {
         }
         self.push(task);
         if switch {
-            self.set_active_task(id);
+            self.set_active_task(Some(id));
         }
+    }
+
+    fn done(&mut self) {
+        let mut parent_id = None;
+        if let Some(task) = self.get_mut_active_task() {
+            task.done = true;
+            parent_id = task.parent;
+        }
+        self.set_active_task(parent_id)
     }
 }
 
-fn tree_print(tasks: &Vec<Task>, id: usize, indent: usize) {
+fn recursive_print(tasks: &Vec<Task>, id: usize, indent: usize) {
     if let Some(task) = tasks.get(id) {
         task.print(indent);
         for child in &task.children {
             if !tasks.get(*child).expect("Child ID is valid").done {
-                tree_print(tasks, *child, indent + 1);
+                recursive_print(tasks, *child, indent + 1);
             }
         }
+    }
+}
+
+fn recursive_get_new_active_task(tasks: &Vec<Task>, id: Option<usize>) -> Option<usize> {
+    match id {
+        Some(id) => {
+            let task = tasks.get(id).expect("ID is valid");
+            match task
+                .children
+                .iter()
+                .find(|id| !tasks.get(**id).expect("ID is valid").done)
+            {
+                None => Some(id),
+                Some(child_id) => recursive_get_new_active_task(tasks, Some(*child_id)),
+            }
+        }
+
+        None => match tasks.get_root_tasks().first() {
+            None => None,
+            Some(task) => recursive_get_new_active_task(tasks, Some(task.id)),
+        },
     }
 }
 
@@ -273,7 +303,7 @@ mod tests {
             done: false,
             active: false,
         }];
-        tasks.set_active_task(0);
+        tasks.set_active_task(Some(0));
         assert!(tasks[0].active)
     }
 
