@@ -37,7 +37,11 @@ pub enum TntCommand {
         switch: bool,
     },
     /// Clear all tasks and subtasks
-    Clear,
+    Clear {
+        /// Delete the local JSON file as well
+        #[arg(short, long)]
+        delete: bool,
+    },
     /// List tasks
     List {
         /// List tasks and subtasks

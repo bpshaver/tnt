@@ -5,6 +5,7 @@ use crate::cli::{Args, TntCommand};
 use crate::task::TaskTree;
 use anyhow::Result;
 use lets_find_up::find_up;
+use std::fs;
 use std::path::PathBuf;
 
 fn get_path() -> PathBuf {
@@ -64,8 +65,12 @@ fn main() -> Result<()> {
                 let parent = tasks.get_active_task().map(|task| task.id);
                 tasks.add(name.join(" "), parent, switch).write(&path)?;
             }
-            TntCommand::Clear => {
-                Vec::new().write(&path).unwrap();
+            TntCommand::Clear { delete } => {
+                if delete {
+                    fs::remove_file(path).unwrap();
+                } else {
+                    Vec::new().write(&path).unwrap();
+                }
             }
             TntCommand::List { all } => {
                 if all {
