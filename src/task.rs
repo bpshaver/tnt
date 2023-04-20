@@ -1,10 +1,9 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::env;
 use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Task {
@@ -30,12 +29,12 @@ pub trait TaskTree {
     fn get_leaf_descendants(&self, idx: usize) -> Vec<usize>;
     fn get_active_task(&self) -> Option<&Task>;
     fn get_mut_active_task(&mut self) -> Option<&mut Task>;
-    fn set_active_task(&mut self, id: Option<usize>);
+    fn set_active_task(&mut self, id: Option<usize>) -> &mut Vec<Task>;
     fn print(&self);
     fn print_all(&self);
-    fn write(&self, path: PathBuf) -> Result<()>;
-    fn add(&mut self, value: String, parent: Option<usize>, switch: bool);
-    fn done(&mut self);
+    fn write(&self, path: &Path) -> Result<()>;
+    fn add(&mut self, value: String, parent: Option<usize>, switch: bool) -> &mut Vec<Task>;
+    fn done(&mut self) -> &mut Vec<Task>;
 }
 
 impl fmt::Display for Task {
@@ -90,14 +89,15 @@ impl TaskTree for Vec<Task> {
         self.iter_mut().find(|t| t.active)
     }
 
-    fn set_active_task(&mut self, id: Option<usize>) {
+    fn set_active_task(&mut self, id: Option<usize>) -> &mut Vec<Task> {
         for task in self.iter_mut() {
             task.active = false;
         }
         let new_task_id = recursive_get_new_active_task(self, id);
         if let Some(task_id) = new_task_id {
             self.get_mut(task_id).expect("ID is valid").active = true;
-        }
+        };
+        self
     }
 
     fn print(&self) {
@@ -112,7 +112,7 @@ impl TaskTree for Vec<Task> {
         }
     }
 
-    fn write(&self, path: PathBuf) -> Result<()> {
+    fn write(&self, path: &Path) -> Result<()> {
         let file = OpenOptions::new()
             .write(true)
             .create(true)
@@ -126,7 +126,7 @@ impl TaskTree for Vec<Task> {
         Ok(())
     }
 
-    fn add(&mut self, value: String, parent: Option<usize>, switch: bool) {
+    fn add(&mut self, value: String, parent: Option<usize>, switch: bool) -> &mut Vec<Task> {
         let id = self.len();
         let task = Task {
             id,
@@ -145,15 +145,17 @@ impl TaskTree for Vec<Task> {
         if switch {
             self.set_active_task(Some(id));
         }
+        self
     }
 
-    fn done(&mut self) {
+    fn done(&mut self) -> &mut Vec<Task> {
         let mut parent_id = None;
         if let Some(task) = self.get_mut_active_task() {
             task.done = true;
             parent_id = task.parent;
         }
-        self.set_active_task(parent_id)
+        self.set_active_task(parent_id);
+        self
     }
 }
 

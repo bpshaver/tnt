@@ -4,54 +4,67 @@ mod task;
 use crate::cli::{Args, TntCommand};
 use crate::task::TaskTree;
 use anyhow::Result;
-use std::env;
+use lets_find_up::find_up;
 use std::path::PathBuf;
 
+fn get_path() -> PathBuf {
+    match find_up(".tnt.json").expect("find_up succeeds") {
+        None => {
+            let path = PathBuf::from("/Users/bshaver/.tnt.json");
+            Vec::new().write(&path).unwrap();
+            path
+        }
+        Some(path) => path,
+    }
+}
+
 fn main() -> Result<()> {
-    let path_var = "TNT_PATH";
-    let path = match env::var(path_var) {
-        Ok(value) => PathBuf::from(value),
-        Err(_) => PathBuf::from("/Users/bshaver/.tnt.json"),
-    };
-    let mut tasks = task::read_task_list_from_file(&path).expect("~/.tnt.json exists");
     let args = Args::parse_args();
+    let path = get_path();
+    let mut tasks = task::read_task_list_from_file(&path).expect("Path should be valid");
     match args.command {
         None => match tasks.get_active_task() {
-            None => println!("No active task"),
-            Some(task) => println!("{}", task),
+            None => {
+                println!("No active task")
+            }
+            Some(task) => {
+                println!("{}", task)
+            }
         },
+
         Some(command) => match command {
+            TntCommand::Init => {
+                todo!()
+            }
             TntCommand::Add {
                 name,
                 parent,
                 switch,
             } => {
-                tasks.add(name.join(" "), parent, switch);
-                tasks.write(path)?
+                tasks
+                    .add(name.join(" "), parent, switch)
+                    .write(&path)
+                    .expect("Write works");
             }
             TntCommand::View => match tasks.get_active_task() {
                 None => println!("No active task"),
                 Some(task) => println!("{}", task),
             },
             TntCommand::Done => {
-                tasks.done();
-                tasks.write(path)?
+                tasks.done().write(&path)?;
             }
             TntCommand::First { name } => {
                 if let Some(task) = tasks.get_active_task() {
-                    tasks.add(name.join(" "), Some(task.id), true);
-                    tasks.write(path)?;
+                    tasks
+                        .add(name.join(" "), Some(task.id), true)
+                        .write(&path)?;
                 }
             }
             TntCommand::Also { name, switch } => {
-                let parent = tasks.get_active_task().and_then(|t| t.parent);
-                tasks.add(name.join(" "), parent, switch);
-                tasks.write(path)?
+                let parent = tasks.get_active_task().map(|task| task.id);
+                tasks.add(name.join(" "), parent, switch).write(&path)?;
             }
-            TntCommand::Clear => {
-                tasks = vec![];
-                tasks.write(path)?
-            }
+            TntCommand::Clear => todo!(),
             TntCommand::List { all } => {
                 if all {
                     tasks.print_all()
@@ -60,8 +73,7 @@ fn main() -> Result<()> {
                 }
             }
             TntCommand::Switch { id } => {
-                tasks.set_active_task(Some(id));
-                tasks.write(path)?;
+                tasks.set_active_task(Some(id)).write(&path)?;
             }
             #[allow(unused)]
             TntCommand::Stdin { parent, current } => todo!(),
@@ -78,10 +90,6 @@ fn main() -> Result<()> {
                         }
                     }
                 }
-            }
-            TntCommand::Init => {
-                tasks = vec![];
-                tasks.write(PathBuf::from("./.tnt.json"))?;
             }
         },
     }
