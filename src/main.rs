@@ -4,14 +4,22 @@ mod task;
 use crate::cli::{Args, TntCommand};
 use crate::task::TaskTree;
 use anyhow::Result;
+use std::env;
 use std::path::PathBuf;
 
 fn main() -> Result<()> {
-    let path = PathBuf::from("/Users/bshaver/.tnt.json");
+    let path_var = "TNT_PATH";
+    let path = match env::var(path_var) {
+        Ok(value) => PathBuf::from(value),
+        Err(_) => PathBuf::from("/Users/bshaver/.tnt.json"),
+    };
     let mut tasks = task::read_task_list_from_file(&path).expect("~/.tnt.json exists");
     let args = Args::parse_args();
     match args.command {
-        None => println!("No subcommand provided, showing current task..."),
+        None => match tasks.get_active_task() {
+            None => println!("No active task"),
+            Some(task) => println!("{}", task),
+        },
         Some(command) => match command {
             TntCommand::Add {
                 name,

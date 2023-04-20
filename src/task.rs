@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Write};
@@ -114,10 +115,16 @@ impl TaskTree for Vec<Task> {
 
     fn write(&self) -> Result<()> {
         // TODO: Error handling
+        let path_var = "TNT_PATH";
+        let path_str = match env::var(path_var) {
+            Ok(value) => value,
+            Err(_) => "Users/bshaver/.tnt.json".to_string(),
+        };
+
         let file = OpenOptions::new()
             .write(true)
             .create(true)
-            .open("/Users/bshaver/.tnt.json")
+            .open(path_str)
             .unwrap();
         // The following truncates the file before writing to it
         file.set_len(0)?;
