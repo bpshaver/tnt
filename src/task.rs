@@ -119,6 +119,8 @@ impl TaskTree for Vec<Task> {
             .create(true)
             .open("/Users/bshaver/.tnt.json")
             .unwrap();
+        // The following truncates the file before writing to it
+        file.set_len(0)?;
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, self).unwrap();
         writer.flush().unwrap();

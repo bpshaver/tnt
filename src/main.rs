@@ -26,8 +26,12 @@ fn main() -> Result<()> {
                 Some(task) => println!("{}", task),
             },
             TntCommand::Done => todo!(),
-            #[allow(unused)]
-            TntCommand::First { name } => todo!(),
+            TntCommand::First { name } => {
+                if let Some(task) = tasks.get_active_task() {
+                    tasks.add(name.join(" "), Some(task.id), true);
+                    tasks.write()?;
+                }
+            }
             #[allow(unused)]
             TntCommand::Also { name, switch } => todo!(),
             TntCommand::Clear => todo!(),
