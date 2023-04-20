@@ -48,7 +48,10 @@ fn main() -> Result<()> {
                 tasks.add(name.join(" "), parent, switch);
                 tasks.write()?
             }
-            TntCommand::Clear => todo!(),
+            TntCommand::Clear => {
+                tasks = vec![];
+                tasks.write()?
+            }
             TntCommand::List { all } => {
                 if all {
                     tasks.print_all()
