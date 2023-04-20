@@ -142,7 +142,7 @@ impl TaskTree for Vec<Task> {
             parent.children.push(id);
         }
         self.push(task);
-        if switch {
+        if switch || self.get_active_task().is_none() {
             self.set_active_task(Some(id));
         }
         self
