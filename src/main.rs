@@ -34,7 +34,7 @@ fn main() -> Result<()> {
 
         Some(command) => match command {
             TntCommand::Init => {
-                todo!()
+                Vec::new().write(&PathBuf::from(".tnt.json")).unwrap();
             }
             TntCommand::Add {
                 name,
@@ -64,7 +64,9 @@ fn main() -> Result<()> {
                 let parent = tasks.get_active_task().map(|task| task.id);
                 tasks.add(name.join(" "), parent, switch).write(&path)?;
             }
-            TntCommand::Clear => todo!(),
+            TntCommand::Clear => {
+                Vec::new().write(&path).unwrap();
+            }
             TntCommand::List { all } => {
                 if all {
                     tasks.print_all()
