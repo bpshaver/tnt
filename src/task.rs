@@ -33,7 +33,7 @@ pub trait TaskTree {
     fn set_active_task(&mut self, id: Option<usize>);
     fn print(&self);
     fn print_all(&self);
-    fn write(&self) -> Result<()>;
+    fn write(&self, path: PathBuf) -> Result<()>;
     fn add(&mut self, value: String, parent: Option<usize>, switch: bool);
     fn done(&mut self);
 }
@@ -112,18 +112,11 @@ impl TaskTree for Vec<Task> {
         }
     }
 
-    fn write(&self) -> Result<()> {
-        // TODO: Error handling
-        let path_var = "TNT_PATH";
-        let path_str = match env::var(path_var) {
-            Ok(value) => value,
-            Err(_) => "/Users/bshaver/.tnt.json".to_string(),
-        };
-
+    fn write(&self, path: PathBuf) -> Result<()> {
         let file = OpenOptions::new()
             .write(true)
             .create(true)
-            .open(path_str)
+            .open(path)
             .unwrap();
         // The following truncates the file before writing to it
         file.set_len(0)?;

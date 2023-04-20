@@ -27,7 +27,7 @@ fn main() -> Result<()> {
                 switch,
             } => {
                 tasks.add(name.join(" "), parent, switch);
-                tasks.write()?
+                tasks.write(path)?
             }
             TntCommand::View => match tasks.get_active_task() {
                 None => println!("No active task"),
@@ -35,22 +35,22 @@ fn main() -> Result<()> {
             },
             TntCommand::Done => {
                 tasks.done();
-                tasks.write()?
+                tasks.write(path)?
             }
             TntCommand::First { name } => {
                 if let Some(task) = tasks.get_active_task() {
                     tasks.add(name.join(" "), Some(task.id), true);
-                    tasks.write()?;
+                    tasks.write(path)?;
                 }
             }
             TntCommand::Also { name, switch } => {
                 let parent = tasks.get_active_task().and_then(|t| t.parent);
                 tasks.add(name.join(" "), parent, switch);
-                tasks.write()?
+                tasks.write(path)?
             }
             TntCommand::Clear => {
                 tasks = vec![];
-                tasks.write()?
+                tasks.write(path)?
             }
             TntCommand::List { all } => {
                 if all {
@@ -61,7 +61,7 @@ fn main() -> Result<()> {
             }
             TntCommand::Switch { id } => {
                 tasks.set_active_task(Some(id));
-                tasks.write()?;
+                tasks.write(path)?;
             }
             #[allow(unused)]
             TntCommand::Stdin { parent, current } => todo!(),
@@ -78,6 +78,10 @@ fn main() -> Result<()> {
                         }
                     }
                 }
+            }
+            TntCommand::Init => {
+                tasks = vec![];
+                tasks.write(PathBuf::from("./.tnt.json"))?;
             }
         },
     }

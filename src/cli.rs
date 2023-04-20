@@ -62,6 +62,8 @@ pub enum TntCommand {
         // ID of task to switch to
         id: usize,
     },
+    /// Init new tnt list in current directory
+    Init,
 }
 
 impl Args {
