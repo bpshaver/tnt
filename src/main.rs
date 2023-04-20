@@ -3,11 +3,12 @@ mod task;
 
 use crate::cli::{Args, TntCommand};
 use crate::task::TaskTree;
+use anyhow::Result;
 use std::path::PathBuf;
 
-fn main() {
+fn main() -> Result<()> {
     let path = PathBuf::from("/Users/bshaver/.tnt.json");
-    let tasks = task::read_task_list_from_file(path).expect("~/.tnt.json exists");
+    let mut tasks = task::read_task_list_from_file(&path).expect("~/.tnt.json exists");
     let args = Args::parse_args();
     match args.command {
         None => println!("No subcommand provided, showing current task..."),
@@ -17,10 +18,8 @@ fn main() {
                 parent,
                 switch,
             } => {
-                println!(
-                    "Name: {:#?}, parent: {:#?}, switch: {}",
-                    name, parent, switch
-                )
+                tasks.add(name.join(" "), parent, switch);
+                tasks.write()?
             }
             TntCommand::View => match tasks.get_active_task() {
                 None => println!("No active task"),
@@ -39,8 +38,10 @@ fn main() {
                     tasks.print()
                 }
             }
-            #[allow(unused)]
-            TntCommand::Switch { id } => todo!(),
+            TntCommand::Switch { id } => {
+                tasks.set_active_task(id);
+                tasks.write()?;
+            }
             #[allow(unused)]
             TntCommand::Stdin { parent, current } => todo!(),
             TntCommand::Local => {
@@ -59,4 +60,5 @@ fn main() {
             }
         },
     }
+    Ok(())
 }

@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::fs::File;
-use std::io::BufReader;
+use std::fs::{File, OpenOptions};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,6 +31,8 @@ pub trait TaskTree {
     fn set_active_task(&mut self, id: usize);
     fn print(&self);
     fn print_all(&self);
+    fn write(&self) -> Result<()>;
+    fn add(&mut self, value: String, parent: Option<usize>, switch: bool);
 }
 
 impl fmt::Display for Task {
@@ -80,6 +82,9 @@ impl TaskTree for Vec<Task> {
     }
 
     fn set_active_task(&mut self, id: usize) {
+        for task in self.iter_mut() {
+            task.active = false;
+        }
         if let Some(task) = self.iter_mut().find(|t| t.id == id) {
             if task.children.is_empty() {
                 task.active = true;
@@ -103,7 +108,36 @@ impl TaskTree for Vec<Task> {
 
     fn print_all(&self) {
         for task in self.get_root_tasks() {
-            tree_print(self, task.id, 0)
+            tree_print(self, task.id, 0);
+        }
+    }
+
+    fn write(&self) -> Result<()> {
+        // TODO: Error handling
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open("/Users/bshaver/.tnt.json")
+            .unwrap();
+        let mut writer = BufWriter::new(file);
+        serde_json::to_writer(&mut writer, self).unwrap();
+        writer.flush().unwrap();
+        Ok(())
+    }
+
+    fn add(&mut self, value: String, parent: Option<usize>, switch: bool) {
+        let id = self.len();
+        let task = Task {
+            id,
+            value,
+            parent,
+            children: vec![],
+            done: false,
+            active: false,
+        };
+        self.push(task);
+        if switch {
+            self.set_active_task(id);
         }
     }
 }
@@ -119,7 +153,7 @@ fn tree_print(tasks: &Vec<Task>, id: usize, indent: usize) {
     }
 }
 
-pub fn read_task_list_from_file(file: PathBuf) -> Result<Vec<Task>> {
+pub fn read_task_list_from_file(file: &PathBuf) -> Result<Vec<Task>> {
     let f = File::open(file)?;
     let reader = BufReader::new(f);
     let task_list: Vec<Task> = serde_json::from_reader(reader)?;
@@ -258,7 +292,7 @@ mod tests {
 
     #[test]
     fn read_lines() {
-        let tasks: Vec<Task> = read_task_list_from_file(task_list_fixture()).unwrap();
+        let tasks: Vec<Task> = read_task_list_from_file(&task_list_fixture()).unwrap();
         assert_eq!(tasks.len(), 2);
         assert_eq!(tasks[0].value, "do my taxes");
         assert_eq!(tasks[1].value, "get w2");
