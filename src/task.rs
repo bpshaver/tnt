@@ -137,6 +137,11 @@ impl TaskTree for Vec<Task> {
             done: false,
             active: false,
         };
+        if let Some(parent) = parent {
+            // TODO to fix this
+            let parent = self.get_mut(parent).expect("Parent ID is valid");
+            parent.children.push(id);
+        }
         self.push(task);
         if switch {
             self.set_active_task(id);
