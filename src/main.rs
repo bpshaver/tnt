@@ -32,8 +32,13 @@ fn main() {
             #[allow(unused)]
             TntCommand::Also { name, switch } => todo!(),
             TntCommand::Clear => todo!(),
-            #[allow(unused)]
-            TntCommand::List { all } => todo!(),
+            TntCommand::List { all } => {
+                if all {
+                    tasks.print_all()
+                } else {
+                    tasks.print()
+                }
+            }
             #[allow(unused)]
             TntCommand::Switch { id } => todo!(),
             #[allow(unused)]

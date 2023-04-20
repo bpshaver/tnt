@@ -15,6 +15,13 @@ pub struct Task {
     pub done: bool,
 }
 
+impl Task {
+    pub fn print(&self, indent: usize) {
+        let ws = (0..indent).map(|_| "  ").collect::<String>();
+        println!("{}{} {}", ws, self.id, self)
+    }
+}
+
 pub trait TaskTree {
     fn get_root_tasks(&self) -> Vec<&Task>;
     fn get_root(&self, id: usize) -> Result<usize>;
@@ -22,6 +29,8 @@ pub trait TaskTree {
     fn get_leaf_descendants(&self, idx: usize) -> Vec<usize>;
     fn get_active_task(&self) -> Option<&Task>;
     fn set_active_task(&mut self, id: usize);
+    fn print(&self);
+    fn print_all(&self);
 }
 
 impl fmt::Display for Task {
@@ -62,7 +71,7 @@ impl TaskTree for Vec<Task> {
                 .flat_map(|task_id| self.get_leaf_descendants(*task_id))
                 .collect()
         } else {
-            return vec![];
+            vec![]
         }
     }
 
@@ -84,6 +93,28 @@ impl TaskTree for Vec<Task> {
             self.get_mut(*active_id)
                 .expect("Index to self is valid")
                 .active = true;
+        }
+    }
+    fn print(&self) {
+        for task in self.get_root_tasks() {
+            task.print(0);
+        }
+    }
+
+    fn print_all(&self) {
+        for task in self.get_root_tasks() {
+            tree_print(self, task.id, 0)
+        }
+    }
+}
+
+fn tree_print(tasks: &Vec<Task>, id: usize, indent: usize) {
+    if let Some(task) = tasks.get(id) {
+        task.print(indent);
+        for child in &task.children {
+            if !tasks.get(*child).expect("Child ID is valid").done {
+                tree_print(tasks, *child, indent + 1);
+            }
         }
     }
 }
