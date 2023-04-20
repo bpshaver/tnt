@@ -32,8 +32,11 @@ fn main() -> Result<()> {
                     tasks.write()?;
                 }
             }
-            #[allow(unused)]
-            TntCommand::Also { name, switch } => todo!(),
+            TntCommand::Also { name, switch } => {
+                let parent = tasks.get_active_task().map(|task| task.id);
+                tasks.add(name.join(" "), parent, switch);
+                tasks.write()?
+            }
             TntCommand::Clear => todo!(),
             TntCommand::List { all } => {
                 if all {
