@@ -61,11 +61,8 @@ fn main() -> Result<()> {
                 tasks.done().write(&path)?;
             }
             TntCommand::First { name } => {
-                if let Some(task) = tasks.get_active_task() {
-                    tasks
-                        .add(name.join(" "), Some(task.id), true)
-                        .write(&path)?;
-                }
+                let parent = tasks.get_active_task().map(|task| task.id);
+                tasks.add(name.join(" "), parent, true).write(&path)?;
             }
             TntCommand::Also { name, switch } => {
                 let parent = tasks.get_active_task().map(|task| task.id);
