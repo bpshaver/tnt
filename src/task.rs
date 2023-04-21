@@ -142,7 +142,14 @@ impl TaskTree for Vec<Task> {
             parent.children.push(id);
         }
         self.push(task);
-        if switch || self.get_active_task().is_none() {
+        // Switch to new task if 'switch' flag is true,
+        // if active task is none, or
+        // if the active task is the parent of the new task
+        if switch
+            || self
+                .get_active_task()
+                .map_or(true, |at| Some(at.id) == parent)
+        {
             self.set_active_task(Some(id));
         }
         self
