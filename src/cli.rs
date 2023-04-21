@@ -12,6 +12,8 @@ pub struct Args {
 pub enum TntCommand {
     /// Mark the current task done
     Done,
+    /// Show the JSON file used to store tasks
+    Which,
     /// Add task
     Add {
         // Name of the task to add

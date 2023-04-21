@@ -38,6 +38,9 @@ fn main() -> Result<()> {
             TntCommand::Init => {
                 Vec::new().write(&PathBuf::from(".tnt.json")).unwrap();
             }
+            TntCommand::Which => {
+                println!("{:?}", &path.to_str().expect("Path can go to str"));
+            }
             TntCommand::Add {
                 name,
                 parent,
