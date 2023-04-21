@@ -6,6 +6,7 @@ use crate::task::TaskTree;
 use anyhow::Result;
 use lets_find_up::find_up;
 use std::fs;
+use std::io;
 use std::path::PathBuf;
 
 fn get_path() -> PathBuf {
@@ -82,8 +83,26 @@ fn main() -> Result<()> {
             TntCommand::Switch { id } => {
                 tasks.set_active_task(Some(id)).write(&path)?;
             }
-            #[allow(unused)]
-            TntCommand::Stdin { parent, current } => todo!(),
+            TntCommand::Stdin { parent, current } => {
+                let mut id = None;
+                if current {
+                    if let Some(parent) = tasks.get_active_task() {
+                        id = Some(parent.id)
+                    }
+                } else if parent.is_some() {
+                    id = parent
+                }
+                for line in io::stdin().lines() {
+                    let line = line
+                        .expect("Expected no non-UTF-8 chars")
+                        .trim()
+                        .to_string();
+                    if !line.is_empty() {
+                        tasks.add(line, id, false);
+                    }
+                }
+                tasks.write(&path)?;
+            }
             TntCommand::Local => {
                 if let Some(task) = tasks.get_active_task() {
                     let root_task = tasks
