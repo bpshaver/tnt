@@ -11,7 +11,6 @@ use std::io;
 use std::path::PathBuf;
 
 fn get_path() -> PathBuf {
-    println!("Finding path");
     match home_find_file(".tnt.json").expect("find_up succeeds") {
         None => {
             let mut path: PathBuf = home_dir().expect("Can find home_dir");
