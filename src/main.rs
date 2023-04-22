@@ -4,14 +4,15 @@ mod task;
 use crate::cli::{Args, TntCommand};
 use crate::task::TaskTree;
 use anyhow::Result;
+use file_lookup::home_find_file;
 use home::home_dir;
-use lets_find_up::find_up;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
 
 fn get_path() -> PathBuf {
-    match find_up(".tnt.json").expect("find_up succeeds") {
+    println!("Finding path");
+    match home_find_file(".tnt.json").expect("find_up succeeds") {
         None => {
             let mut path: PathBuf = home_dir().expect("Can find home_dir");
             path.push(".tnt.json");
