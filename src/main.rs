@@ -11,7 +11,7 @@ use std::io;
 use std::path::PathBuf;
 
 fn get_path() -> PathBuf {
-    match home_find_file(".tnt.json").expect("find_up succeeds") {
+    match home_find_file(".tnt.json").expect("home_find_file succeeds") {
         None => {
             let mut path: PathBuf = home_dir().expect("Can find home_dir");
             path.push(".tnt.json");
@@ -65,7 +65,10 @@ fn main() -> Result<()> {
                 tasks.add(name.join(" "), parent, true).write(&path)?;
             }
             TntCommand::Also { name, switch } => {
-                let parent = tasks.get_active_task().map(|task| task.id);
+                let parent = match tasks.get_active_task() {
+                    None => None,
+                    Some(task) => task.parent,
+                };
                 tasks.add(name.join(" "), parent, switch).write(&path)?;
             }
             TntCommand::Clear { delete } => {
