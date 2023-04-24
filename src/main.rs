@@ -6,23 +6,30 @@ use crate::task::TaskTree;
 use anyhow::Result;
 use file_lookup::home_find_file;
 use home::home_dir;
+use log::trace;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
 
 fn get_path() -> PathBuf {
+    trace!("Looking for the TNT JSON path");
     match home_find_file(".tnt.json").expect("home_find_file succeeds") {
         None => {
+            trace!("No JSON file found. Creating one...");
             let mut path: PathBuf = home_dir().expect("Can find home_dir");
             path.push(".tnt.json");
             Vec::new().write(&path).unwrap();
             path
         }
-        Some(path) => path,
+        Some(path) => {
+            trace!("Using JSON file {:?}", &path);
+            path
+        }
     }
 }
 
 fn main() -> Result<()> {
+    env_logger::init();
     let args = Args::parse_args();
     let path = get_path();
     let mut tasks = task::read_task_list_from_file(&path).expect("Path should be valid");
@@ -41,7 +48,7 @@ fn main() -> Result<()> {
                 Vec::new().write(&PathBuf::from(".tnt.json")).unwrap();
             }
             TntCommand::Which => {
-                println!("{:?}", &path.to_str().expect("Path can go to str"));
+                println!("{}", path.display());
             }
             TntCommand::Add {
                 name,
