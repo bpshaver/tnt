@@ -113,11 +113,7 @@ impl TaskTree for Vec<Task> {
     }
 
     fn write(&self, path: &Path) -> Result<()> {
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(path)
-            .unwrap();
+        let file = OpenOptions::new().write(true).create(true).open(path)?;
         // The following truncates the file before writing to it
         file.set_len(0)?;
         let mut writer = BufWriter::new(file);
