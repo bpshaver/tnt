@@ -5,9 +5,13 @@
 ## Installation
 
 Install `cargo`
-
 ```bash
 $ cargo install --git https://github.com/bpshaver/tnt
+```
+
+## Usage
+
+```trycmd
 $ tnt --help
 TNT interactive todo list
 
@@ -31,4 +35,5 @@ Commands:
 Options:
   -h, --help     Print help
   -V, --version  Print version
-````
+
+```

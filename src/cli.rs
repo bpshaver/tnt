@@ -30,7 +30,7 @@ pub enum TntCommand {
         // Name of the task to add
         name: Vec<String>,
     },
-    /// Add sibling (non_blocking) task
+    /// Add sibling (non-blocking) task
     Also {
         // Name of the task to add
         name: Vec<String>,
