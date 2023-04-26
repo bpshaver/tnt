@@ -4,6 +4,7 @@ use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Task {
@@ -13,6 +14,7 @@ pub struct Task {
     children: Vec<usize>,
     pub active: bool,
     pub done: bool,
+    last_touched: SystemTime,
 }
 
 impl Task {
@@ -95,7 +97,9 @@ impl TaskTree for Vec<Task> {
         }
         let new_task_id = recursive_get_new_active_task(self, id);
         if let Some(task_id) = new_task_id {
-            self.get_mut(task_id).expect("ID is valid").active = true;
+            let task = self.get_mut(task_id).expect("ID is valid");
+            task.active = true;
+            task.last_touched = SystemTime::now();
         };
         self
     }
@@ -131,6 +135,7 @@ impl TaskTree for Vec<Task> {
             children: vec![],
             done: false,
             active: false,
+            last_touched: SystemTime::now(),
         };
         if let Some(parent) = parent {
             // TODO to fix this
@@ -180,14 +185,19 @@ fn recursive_get_new_active_task(tasks: &Vec<Task>, id: Option<usize>) -> Option
             match task
                 .children
                 .iter()
-                .find(|id| !tasks.get(**id).expect("ID is valid").done)
+                .filter(|id| !tasks.get(**id).expect("ID is valid").done)
+                .max_by_key(|id| tasks.get(**id).expect("ID is valid").last_touched)
             {
                 None => Some(id),
                 Some(child_id) => recursive_get_new_active_task(tasks, Some(*child_id)),
             }
         }
 
-        None => match tasks.get_root_tasks().first() {
+        None => match tasks
+            .get_root_tasks()
+            .iter()
+            .max_by_key(|task| task.last_touched)
+        {
             None => None,
             Some(task) => recursive_get_new_active_task(tasks, Some(task.id)),
         },
@@ -214,6 +224,7 @@ mod tests {
                 children: vec![2, 3],
                 active: false,
                 done: false,
+                last_touched: SystemTime::now(),
             },
             Task {
                 id: 1,
@@ -222,6 +233,7 @@ mod tests {
                 children: vec![],
                 active: false,
                 done: true,
+                last_touched: SystemTime::now(),
             },
             Task {
                 id: 2,
@@ -230,6 +242,7 @@ mod tests {
                 children: vec![],
                 active: true,
                 done: false,
+                last_touched: SystemTime::now(),
             },
             Task {
                 id: 3,
@@ -238,6 +251,7 @@ mod tests {
                 children: vec![4, 5],
                 active: false,
                 done: false,
+                last_touched: SystemTime::now(),
             },
             Task {
                 id: 4,
@@ -246,6 +260,7 @@ mod tests {
                 children: vec![],
                 active: false,
                 done: false,
+                last_touched: SystemTime::now(),
             },
             Task {
                 id: 5,
@@ -254,6 +269,7 @@ mod tests {
                 children: vec![],
                 active: false,
                 done: false,
+                last_touched: SystemTime::now(),
             },
         ]
     }
@@ -306,6 +322,7 @@ mod tests {
             children: vec![],
             done: false,
             active: false,
+            last_touched: SystemTime::now(),
         }];
         tasks.set_active_task(Some(0));
         assert!(tasks[0].active)
@@ -320,7 +337,8 @@ mod tests {
                 "parent": null,
                 "children": [6],
                 "active": false,
-                "done": false
+                "done": false,
+                "last_touched":{"nanos_since_epoch":541994000,"secs_since_epoch":1682461180}
             }"#;
         let task: Task = serde_json::from_str(task_json).unwrap();
         assert_eq!(task.id, 5);
