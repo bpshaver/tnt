@@ -14,7 +14,12 @@ pub struct Task {
     children: Vec<usize>,
     pub active: bool,
     pub done: bool,
+    #[serde(default = "default_time")]
     last_touched: SystemTime,
+}
+
+fn default_time() -> SystemTime {
+    SystemTime::now()
 }
 
 impl Task {
