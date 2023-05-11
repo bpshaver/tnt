@@ -70,6 +70,8 @@ pub enum TntCommand {
     },
     /// Init new tnt list in current directory
     Init,
+    /// Interactive switch
+    Iswitch,
 }
 
 impl Args {

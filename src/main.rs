@@ -6,6 +6,7 @@ use crate::task::TaskTree;
 use anyhow::Result;
 use file_lookup::home_find_file;
 use home::home_dir;
+use inquire::Select;
 use log::trace;
 use std::fs;
 use std::io;
@@ -128,6 +129,15 @@ fn main() -> Result<()> {
                         }
                     }
                 }
+            }
+            TntCommand::Iswitch => {
+                if let Ok(task) = Select::new("Select?", tasks.iter().filter(|t| !t.done).collect())
+                    .with_vim_mode(true)
+                    .without_help_message()
+                    .prompt()
+                {
+                    tasks.set_active_task(Some(task.id)).write(&path)?
+                };
             }
         },
     }
