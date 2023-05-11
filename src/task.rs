@@ -104,7 +104,7 @@ impl TaskTree for Vec<Task> {
         if let Some(task_id) = new_task_id {
             let task = self.get_mut(task_id).expect("ID is valid");
             task.active = true;
-            task.last_touched = SystemTime::now();
+            recursive_set_last_touched(self, task_id);
         };
         self
     }
@@ -169,6 +169,15 @@ impl TaskTree for Vec<Task> {
         }
         self.set_active_task(parent_id);
         self
+    }
+}
+
+fn recursive_set_last_touched(tasks: &mut Vec<Task>, id: usize) {
+    if let Some(task) = tasks.get_mut(id) {
+        task.last_touched = SystemTime::now();
+        if let Some(parent) = task.parent {
+            recursive_set_last_touched(tasks, parent)
+        }
     }
 }
 
