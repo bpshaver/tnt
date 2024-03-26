@@ -34,6 +34,7 @@ fn main() -> Result<()> {
     let args = Args::parse_args();
     let path = get_path();
     let mut tasks = task::read_task_list_from_file(&path).expect("Path should be valid");
+
     match args.command {
         None => match tasks.get_active_task() {
             None => {
@@ -64,6 +65,10 @@ fn main() -> Result<()> {
             TntCommand::View => match tasks.get_active_task() {
                 None => println!("No active task"),
                 Some(task) => println!("{}", task),
+            },
+            TntCommand::Id => match tasks.get_active_task() {
+                Some(task) => println!("{}", task.id),
+                _ => {}
             },
             TntCommand::Done => {
                 tasks.done().write(&path)?;

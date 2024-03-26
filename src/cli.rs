@@ -72,6 +72,8 @@ pub enum TntCommand {
     Init,
     /// Interactive switch
     Iswitch,
+    /// Get current task ID
+    Id,
 }
 
 impl Args {
