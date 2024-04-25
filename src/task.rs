@@ -6,7 +6,7 @@ use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Task {
     pub id: usize,
     pub value: String,
@@ -26,6 +26,17 @@ impl Task {
     pub fn print(&self, indent: usize) {
         let ws = (0..indent).map(|_| "  ").collect::<String>();
         println!("{}{} {}", ws, self.id, self)
+    }
+    pub fn new(id: usize, value: String, parent: Option<usize>) -> Task {
+        Task {
+            id,
+            value,
+            parent,
+            children: vec![],
+            done: false,
+            active: false,
+            last_touched: default_time(),
+        }
     }
 }
 
@@ -133,15 +144,7 @@ impl TaskTree for Vec<Task> {
 
     fn add(&mut self, value: String, parent: Option<usize>, switch: bool) -> &mut Vec<Task> {
         let id = self.len();
-        let task = Task {
-            id,
-            value,
-            parent,
-            children: vec![],
-            done: false,
-            active: false,
-            last_touched: SystemTime::now(),
-        };
+        let task = Task::new(id, value, parent);
         if let Some(parent) = parent {
             // TODO to fix this
             let parent = self.get_mut(parent).expect("Parent ID is valid");
