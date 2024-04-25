@@ -10,6 +10,7 @@ anyhow = "1.0.70"
 clap = { version = "4.2.1", features = ["derive"] }
 env_logger = "0.10.0"
 file_lookup = "0.2.0"
+fuzzy-matcher = { version = "0.3.7", features = ["compact"] }
 home = "0.5.4"
 inquire = "0.6.1"
 log = "0.4.17"
