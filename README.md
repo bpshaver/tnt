@@ -5,6 +5,7 @@
 ## Installation
 
 Install `cargo`
+
 ```bash
 $ cargo install --git https://github.com/bpshaver/tnt
 ```
@@ -31,6 +32,8 @@ Commands:
   switch   Switch to task
   init     Init new tnt list in current directory
   iswitch  Interactive switch
+  id       Get current task ID
+  do       Switch to a task by fuzzy match
   help     Print this message or the help of the given subcommand(s)
 
 Options:
