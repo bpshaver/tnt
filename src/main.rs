@@ -1,8 +1,10 @@
 mod cli;
 mod task;
+mod utils;
 
 use crate::cli::{Args, TntCommand};
 use crate::task::TaskTree;
+use crate::utils::find_matching_task;
 use anyhow::Result;
 use file_lookup::home_find_file;
 use home::home_dir;
@@ -143,6 +145,13 @@ fn main() -> Result<()> {
                 {
                     tasks.set_active_task(Some(task.id)).write(&path)?
                 };
+            }
+            TntCommand::Do { name } => {
+                let name = name.join(" ");
+                let task = find_matching_task(&name, &tasks);
+                if let Some(task) = task {
+                    tasks.set_active_task(Some(task.id)).write(&path)?
+                }
             }
         },
     }

@@ -74,6 +74,11 @@ pub enum TntCommand {
     Iswitch,
     /// Get current task ID
     Id,
+    /// Switch to a task by fuzzy match
+    Do {
+        // Name of the task to switch to
+        name: Vec<String>,
+    },
 }
 
 impl Args {
